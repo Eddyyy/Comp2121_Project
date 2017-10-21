@@ -1,0 +1,20 @@
+Project Name: Monorail Emulator
+Aim: to create a program that emulates the operation of a monorail with passengers getting on and off at different inputted stops on the Atmega2560
+
+Use Cases:
+	1. The number of stations is typed then * or # is pressed to finish (max number is 10 and cannot type letters)
+	2. The First station is typed in then * or # is pressed to finish (no more characters than 10 and 0 is a space)
+	3. This is repeated for up to 10 stations based on the first number typed in
+	4. The time to travel between each station is typed in with the same finish (max 10 and no letters)
+	5. This is repeated for all the connections (first one being 1/2 then up to n-1/n)
+	6. Then the time that the monorail stops at each station is typed in with same finish (max 10 and no letters)
+	7. After 5 seconds the emulation component begins
+	8. The stations are visted from 1 to n and back to 1 and so on. the configeration determines the times around and the names of the stations
+	9. PB1 is used to signal the train that a passenger wants to get on.
+	10. Then PB0 is used to signal a passenger wants to get off
+	11. The # key stops the monorail exactly where it is and pressing it again starts the monorail again
+	
+functions or data we might want:
+	One that sends message to the lcd and gets an input from the keypad
+	The station names could be stored in an array.
+	Have a particular macro that waits exactly one second
