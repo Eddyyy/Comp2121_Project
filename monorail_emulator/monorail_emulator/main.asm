@@ -23,7 +23,7 @@
 .def temp2 =r20
 .def flag = r23
 .def counter = r24
-.def assci_zero =r21
+.def asci_zero =r21
 .equ PORTLDIR = 0xF0
 .equ INITCOLMASK = 0xEF
 .equ INITROWMASK = 0x01
@@ -76,103 +76,109 @@ do_lcd_command 0b00001110 ; Cursor on, bar, no blink
 
 ; main keeps scanning the keypad to find which key is pressed.
 main:
-ldi mask, INITCOLMASK ; initial column mask
-clr col ; initial column
-colloop:
-STS PORTL, mask ; set column to mask value
-; (sets column 0 off)
-ldi temp, 0xFF ; implement a delay so the
-; hardware can stabilize
+	ldi mask, INITCOLMASK ; initial column mask
+	clr col ; initial column
+	colloop:
+	STS PORTL, mask ; set column to mask value
+	; (sets column 0 off)
+
+	ldi temp, 0xFF ; implement a delay so the
+	; hardware can stabilize
 delay:
-dec temp
-brne delay
-LDS temp, PINL ; read PORTL. Cannot use in 
-andi temp, ROWMASK ; read only the row bits
-cpi temp, 0xF ; check if any rows are grounded
-breq nextcol ; if not go to the next column
-ldi mask, INITROWMASK ; initialise row check
-clr row ; initial row
-rowloop:      
-mov temp2, temp
-and temp2, mask ; check masked bit
-brne skipconv ; if the result is non-zero,
-; we need to look again
-rcall convert ; if bit is clear, convert the bitcode
-jmp main ; and start again
+	dec temp
+	brne delay
+
+	LDS temp, PINL ; read PORTL. Cannot use in 
+	andi temp, ROWMASK ; read only the row bits
+	cpi temp, 0xF ; check if any rows are grounded
+	breq nextcol ; if not go to the next column
+	ldi mask, INITROWMASK ; initialise row check
+	clr row ; initial row
+
+rowloop:
+	mov temp2, temp
+	and temp2, mask ; check masked bit
+	brne skipconv ; if the result is non-zero,
+	; we need to check again
+	rcall convert ; if bit is clear, convert the bitcode
+	jmp main ; and start again
 skipconv:
-inc row ; else move to the next row
-lsl mask ; shift the mask to the next bit
-jmp rowloop          
+	inc row ; else move to the next row
+	lsl mask ; shift the mask to the next bit
+	jmp rowloop          
 nextcol:     
-cpi col, 3 ; check if we^Òre on the last column
-brne Continue ; if so, no buttons were pushed,
-; so start again.
-ldi flag,0
-rjmp main
+	cpi col, 3 ; check if we are on the last column
+	brne Continue ; if so, no buttons were pushed,
+	; so start again.
+	ldi flag,0
+	jmp main
+
+
 Continue:
-sec ; else shift the column mask:
-; We must set the carry bit
-rol mask ; and then rotate left by a bit,
-; shifting the carry into
-; bit zero. We need this to make
-; sure all the rows have
-; pull-up resistors
-inc col ; increment column value
-jmp colloop ; and check the next column
-; convert function converts the row and column given to a
-; binary number and also outputs the value to PORTC.
-; Inputs come from registers row and col and output is in
-; temp.
+	sec ; else shift the column mask:
+	; We must set the carry bit
+	rol mask ; and then rotate left by a bit,
+	; shifting the carry into
+	; bit zero. We need this to make
+	; sure all the rows have
+	; pull-up resistors
+	inc col ; increment column value
+	jmp colloop ; and check the next column
+	; convert function converts the row and column given to a
+	; binary number and also outputs the value to PORTC.
+	; Inputs come from registers row and col and output is in
+	; temp.
 convert:
-cpi col, 3 ; if column is 3 we have a letter
-breq letters
-cpi row, 3 ; if row is 3 we have a symbol or 0
-breq symbols
-mov temp, row ; otherwise we have a number (1-9)
-lsl temp ; temp = row * 2
-add temp, row ; temp = row * 3
-add temp, col ; add the column address
-; to get the offset from 1
-inc temp ; add 1. Value of switch is
-; row*3 + col + 1.
-jmp number_convert
+	cpi col, 3 ; if column is 3 we have a letter
+	breq letters
+	cpi row, 3 ; if row is 3 we have a symbol or 0
+	breq symbols
+	mov temp, row ; otherwise we have a number (1-9)
+	lsl temp ; temp = row * 2
+	add temp, row ; temp = row * 3
+	add temp, col ; add the column address
+	; to get the offset from 1
+	inc temp ; add 1. Value of switch is
+	; row*3 + col + 1.
+	jmp number_convert
+
 letters:
-ldi temp, 0b01000001
-add temp, row ; increment from 0xA by the row value
-jmp convert_end
+	ldi temp, 0b01000001
+	add temp, row ; increment from 0xA by the row value
+	jmp convert_end
 symbols:
-cpi col, 0 ; check if we have a star
-breq star
-cpi col, 1 ; or if we have zero
-breq zero
-ldi temp, 0b00100011 ; we'll output 0xF for hash
-jmp convert_end
+	cpi col, 0 ; check if we have a star
+	breq star
+	cpi col, 1 ; or if we have zero
+	breq zero
+	ldi temp, 0b00100011 ; we'll output 0xF for hash
+	jmp convert_end
 star:
-ldi temp, 0b00101010 ; we'll output 0xE for star
-jmp convert_end
+	ldi temp, 0b00101010 ; we'll output 0xE for star
+	jmp convert_end
 zero:
-clr temp ; set to zero
-jmp number_convert
+	clr temp ; set to zero
+	jmp number_convert
 
 
 number_convert:
-ldi assci_zero, 0x30
-add temp, assci_zero
+	ldi asci_zero, 0x30
+	add temp, asci_zero
 
 convert_end:
-cpi counter,17 ; 16 is maximum number of LCD
-brlo not_clean_line
-ldi counter, 1
-do_lcd_command 0b00000001 ; clear display
-do_lcd_command 0b00001110 ; Cursor on, bar, no blink
-do_lcd_data temp
-rjmp convert_ret
+	cpi counter,17 ; 16 is maximum number of LCD
+	brlo not_clean_line
+	ldi counter, 1
+	do_lcd_command 0b00000001 ; clear display
+	do_lcd_command 0b00001110 ; Cursor on, bar, no blink
+	do_lcd_data temp
+	rjmp convert_ret
 not_clean_line:
-cpi flag, 1
-breq convert_ret
-ldi flag, 1
-inc counter
-do_lcd_data temp
+	cpi flag, 1
+	breq convert_ret
+	ldi flag, 1
+	inc counter
+	do_lcd_data temp
 convert_ret:
 ret ; return to caller
 
@@ -275,7 +281,7 @@ sleep_5ms:
 ;
 ; Delay 15 999 992 cycles
 ; 999ms 999us 500 ns at 16 MHz
-; extra 8 cycles for rcall, ret, push and pop
+; extra 8 cycles for rcall, ret, push and pop makes 16*10^6 cycles at 16 MHz
 wait_1s:
 	push r23
 	push r24
