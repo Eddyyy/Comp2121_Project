@@ -16,14 +16,15 @@
 ; extended I/O. Typically "LDS" and "STS" combined with "SBRS", "SBRC", "SBR", and "CBR".
 
 .include "m2560def.inc"
-.def temp =r22
-.def row =r17
-.def col =r18
-.def mask =r19
-.def temp2 =r20
-.def flag = r23
-.def counter = r24
-.def asci_zero =r21
+.def row = r17
+.def col = r18
+.def mask = r19
+.def temp2 = r20
+.def temp = r21
+.def counter = r22
+.def buffer = r23
+.def flag = r9
+.def mode = r10
 .equ PORTLDIR = 0xF0
 .equ INITCOLMASK = 0xEF
 .equ INITROWMASK = 0x01
@@ -40,10 +41,22 @@
 	rcall lcd_data
 	rcall lcd_wait
 .endmacro
+;A1 = A
+;A9 = I 
+;B1 = J
+;B9 = R
+;C1 = S
+;C8 = Z
+
+; mode = 0 Normal Typing
+; mode = 1 Name Typing
+.dseg
 
 
 .cseg
 jmp RESET
+.org INT0addr
+	jmp keypad
 
 .org 0x72
 RESET:
@@ -62,6 +75,9 @@ out PORTF, temp
 out PORTA, temp
 
 clr counter
+clr flag
+clr mode
+clr buffer
 do_lcd_command 0b00111000 ; 2x5x7
 rcall sleep_5ms
 do_lcd_command 0b00111000 ; 2x5x7
@@ -76,6 +92,8 @@ do_lcd_command 0b00001110 ; Cursor on, bar, no blink
 
 ; main keeps scanning the keypad to find which key is pressed.
 main:
+	sei
+keypad:
 	ldi mask, INITCOLMASK ; initial column mask
 	clr col ; initial column
 	colloop:
@@ -101,7 +119,7 @@ rowloop:
 	brne skipconv ; if the result is non-zero,
 	; we need to check again
 	rcall convert ; if bit is clear, convert the bitcode
-	jmp main ; and start again
+	jmp keypad ; and start again
 skipconv:
 	inc row ; else move to the next row
 	lsl mask ; shift the mask to the next bit
@@ -110,8 +128,8 @@ nextcol:
 	cpi col, 3 ; check if we are on the last column
 	brne Continue ; if so, no buttons were pushed,
 	; so start again.
-	ldi flag,0
-	jmp main
+	clr flag
+	jmp keypad
 
 
 Continue:
@@ -141,45 +159,72 @@ convert:
 	; to get the offset from 1
 	inc temp ; add 1. Value of switch is
 	; row*3 + col + 1.
-	jmp number_convert
+	jmp branchs
 
 letters:
 	ldi temp, 0b01000001
 	add temp, row ; increment from 0xA by the row value
-	jmp convert_end
+	jmp branchs
 symbols:
 	cpi col, 0 ; check if we have a star
 	breq star
 	cpi col, 1 ; or if we have zero
 	breq zero
 	ldi temp, 0b00100011 ; we'll output 0xF for hash
-	jmp convert_end
+	jmp branchs
 star:
 	ldi temp, 0b00101010 ; we'll output 0xE for star
-	jmp convert_end
+	jmp branchs
 zero:
 	clr temp ; set to zero
-	jmp number_convert
+	jmp branchs
 
 
-number_convert:
-	ldi asci_zero, 0x30
-	add temp, asci_zero
-
-convert_end:
-	cpi counter,17 ; 16 is maximum number of LCD
-	brlo not_clean_line
-	ldi counter, 1
-	do_lcd_command 0b00000001 ; clear display
-	do_lcd_command 0b00001110 ; Cursor on, bar, no blink
-	do_lcd_data temp
-	rjmp convert_ret
-not_clean_line:
+branchs:
 	cpi flag, 1
 	breq convert_ret
-	ldi flag, 1
+	cpi mode, 1
+	breq character_mode
+	rjmp number_mode
+
+character_mode:
+	cpi buffer, 0
+	cpi temp, 0b01000100
+	breq end_input
+	breq compare_A
+	cpi temp, 10
+	brlo load_values
+	rjmp compare_A
+load_values:
+	add temp, buffer
+	clr buffer
 	inc counter
 	do_lcd_data temp
+	rjmp convert_end
+compare_A:
+	cpi temp, 0b01000001
+	brne compare_B
+	ldi buffer,0b01000000; A-1
+	rjmp convert_end
+compare_B:
+	cpi temp, 0b01000010
+	brne compare_C
+	ldi buffer,0b01001001; J-1
+	rjmp convert_end
+compare_C:
+	cpi temp, 0b01000011
+	brne convert_end
+	ldi buffer,0b01010010; S-1
+	rjmp convert_end
+number_mode:
+
+convert_end:
+	inc flag
+;	inc counter
+;	do_lcd_data temp
+
+end_input:
+
 convert_ret:
 ret ; return to caller
 
