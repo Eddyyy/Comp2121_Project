@@ -133,6 +133,7 @@ convert:
 	breq letters
 	cpi row, 3 ; if row is 3 we have a symbol or 0
 	breq symbols
+;we need to change this to display letters when the numbers are pressed
 	mov temp, row ; otherwise we have a number (1-9)
 	lsl temp ; temp = row * 2
 	add temp, row ; temp = row * 3
