@@ -23,7 +23,7 @@ configuration values
 
 station Array:
 ([0],[1],[2],[3],[4],[5],[6],[7],[8],[9],[10],[11],[12],[13],[14],[15]	)*n
-([station string with '=' terminator  0-10  ] [ti],[st]					)
+([station string with ';' terminator  0-10  ] [ti],[st]					)
 (st is the time to stop at station)	
 (ti is time to next station)
 add yl, (9<<4)
@@ -31,3 +31,40 @@ adc yh, 0
 Y+(n<<4) to access Y[n]
 
 station representation: 'AD C' --> A, B, ' ', C, 0
+
+get_str: ;(mode=r17, &result=X)
+	;while(c<10 or temp != D
+	rcall keypad
+	;do logic on temp takes into account mode
+	display temp ;if temp != A,B,C,D
+	;if temp == D && mode == 1 --> store ';'
+
+
+display_message: ;(&message)
+
+store_result: ;(&result, &config_array)
+
+main:
+	config:
+	; asks first question 'Please type the maximum number of stations:' 
+	display_message,xl,xh ;A will hold the message to send to LCD
+	clr mode
+	rcall get_str ;return result
+	store_result;(&result, &config_array)
+
+	;for(i=0;i<result;i++)
+	
+	emulation:
+	while (true) {
+	running:
+		run_motor(60)
+		wait(time between stop seconds)
+	not_running:
+		display_message(&message)
+		flash leds
+		wait(time stop)
+	}
+	
+int0:
+	ldi flag, 1
+	reti

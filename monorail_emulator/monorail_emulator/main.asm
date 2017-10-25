@@ -344,20 +344,23 @@ L1: dec  r20
 	pop r23
 	ret
 
-get_chars:
+get_str: ;(mode=r17, &result=X)
 	;while(c<10 or temp != D
 	rcall keypad
 	;do logic on temp takes into account mode
 	display temp ;if temp != A,B,C,D
-	store_config ;if temp == D && mode == 1 --> store ';'
+	;if temp == D && mode == 1 --> store ';'
 
 
+display_message: ;(&message)
+
+store_result: ;(&result, &config_array)
 
 main:
 	; asks first question 'Please type the maximum number of stations:' 
 	display_message,xl,xh ;A will hold the message to send to LCD
 	clr mode
-	rcall get_chars ;return result
-	store_result
+	rcall get_str ;return result
+	store_result;(&result, &config_array)
 
 	;for(i=0;i<result;i++)
