@@ -18,3 +18,16 @@ functions or data we might want:
 	One that sends message to the lcd and gets an input from the keypad
 	The station names could be stored in an array.
 	Have a particular macro that waits exactly one second
+	
+configuration values
+
+station Array:
+([0],[1],[2],[3],[4],[5],[6],[7],[8],[9],[10],[11],[12],[13],[14],[15]	)*n
+([station string with '=' terminator  0-10  ] [ti],[st]					)
+(st is the time to stop at station)	
+(ti is time to next station)
+add yl, (9<<4)
+adc yh, 0
+Y+(n<<4) to access Y[n]
+
+station representation: 'AD C' --> A, B, ' ', C, 0

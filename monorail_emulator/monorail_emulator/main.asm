@@ -8,8 +8,8 @@
 ;The labels on PORTL are reversed, i.e., PLi is actually PL7-i (i=0, 1, ¡­, 7).  
 
 ;Board settings: 
-;Connect the four columns C0~C3 of the keypad to PL3~PL0 of PORTL and the four rows R0~R3 to PL7~PL4 of PORTL.
-;Connect LED0~LED7 of LEDs to PC0~PC7 of PORTC.
+;Connect the four columns C0-C3 of the keypad to PL3-PL0 of PORTL and the four rows R0-R3 to PL7-PL4 of PORTL.
+;For LCD data connect D0-D7 to PF0-PF7 respectively and for LCD commands connect BE,RW,E,RS to PA4-PA7 respectively
     
 ; For I/O registers located in extended I/O map, "IN", "OUT", "SBIS", "SBIC", 
 ; "CBI", and "SBI" instructions must be replaced with instructions that allow access to 
@@ -48,15 +48,13 @@
 ;C1 = S
 ;C8 = Z
 
-; mode = 0 Normal Typing
-; mode = 1 Name Typing
+; mode = 0 Number Typing
+; mode = 1 Char Typing
 .dseg
 
 
 .cseg
 jmp RESET
-.org INT0addr
-	jmp keypad
 
 .org 0x72
 RESET:
@@ -90,13 +88,11 @@ do_lcd_command 0b00000110 ; increment, no display shift
 do_lcd_command 0b00001110 ; Cursor on, bar, no blink
 
 
-; main keeps scanning the keypad to find which key is pressed.
-main:
-	sei
+; keypad keeps scanning the keypad to find which key is pressed.
 keypad:
 	ldi mask, INITCOLMASK ; initial column mask
 	clr col ; initial column
-	colloop:
+colloop:
 	STS PORTL, mask ; set column to mask value
 	; (sets column 0 off)
 
@@ -159,32 +155,32 @@ convert:
 	; to get the offset from 1
 	inc temp ; add 1. Value of switch is
 	; row*3 + col + 1.
-	jmp branchs
+	jmp branch
 
 letters:
 	ldi temp, 0b01000001
 	add temp, row ; increment from 0xA by the row value
-	jmp branchs
+	jmp branch
 symbols:
 	cpi col, 0 ; check if we have a star
 	breq star
 	cpi col, 1 ; or if we have zero
 	breq zero
 	ldi temp, 0b00100011 ; we'll output 0xF for hash
-	jmp branchs
+	jmp branch
 star:
 	ldi temp, 0b00101010 ; we'll output 0xE for star
-	jmp branchs
+	jmp branch
 zero:
 	clr temp ; set to zero
-	jmp branchs
+	jmp branch
 
 
-branchs:
-	cpi flag, 1
-	breq convert_ret
-	cpi mode, 1
-	breq character_mode
+branch:
+	sbrs flag, 0		;cpi flag, 1
+	rjmp convert_ret
+	sbrs mode, 0	;cpi mode, 1
+	rjmp character_mode
 	rjmp number_mode
 
 character_mode:
@@ -347,3 +343,21 @@ L1: dec  r20
 	pop r24
 	pop r23
 	ret
+
+get_chars:
+	;while(c<10 or temp != D
+	rcall keypad
+	;do logic on temp takes into account mode
+	display temp ;if temp != A,B,C,D
+	store_config ;if temp == D && mode == 1 --> store ';'
+
+
+
+main:
+	; asks first question 'Please type the maximum number of stations:' 
+	display_message,xl,xh ;A will hold the message to send to LCD
+	clr mode
+	rcall get_chars ;return result
+	store_result
+
+	;for(i=0;i<result;i++)
