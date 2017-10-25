@@ -52,7 +52,13 @@ main:
 	rcall get_str ;return result
 	store_result;(&result, &config_array)
 
-	;for(i=0;i<result;i++)
+	for(i=0;i<result;i++) {
+		display_message,xl,xh ;A will hold the message to send to LCD
+		ser mode
+		rcall get_str ;return result
+		store_result;(&result, &config_array)
+	}
+	
 	
 	emulation:
 	while (true) {
