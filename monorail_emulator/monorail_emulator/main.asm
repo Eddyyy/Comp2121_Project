@@ -70,7 +70,6 @@
 
 .cseg
 .org 0x00
-jmp RESET
 rjmp bypass
 	string0: .db "MAX NUM STATION:;"
 	string1: .db "NAME STATION;"
@@ -78,6 +77,7 @@ rjmp bypass
 	string3: .db "STOP TIME:;"
 	err_string: .db "INCORRECT;"
 bypass:
+jmp RESET
 .org OVF0addr ; OVF0addr is the address of Timer0 Overflow Interrupt Vector
 	jmp Timer0OVF ; jump to the interrupt handler for Timer0 overflow.
 	jmp DEFAULT ; default service for all other interrupts.
