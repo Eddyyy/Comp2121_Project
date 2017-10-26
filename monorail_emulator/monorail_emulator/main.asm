@@ -339,6 +339,7 @@ get_chars: ;r17 mode=r
 	push r17
 	push temp
 	push temp2
+get_chars_start:
 	clr r17;set r17 as buffer of get_chars
 	clr i
 	; initialize buffer
@@ -550,14 +551,13 @@ get_chars: ;r17 mode=r
 		jmp display_err
 		end_err:
 		do_lcd_command  0b11000000 ;print("\n") -> newline
-
-		jmp get_chars
+		jmp get_chars_start
 
 		end_get_char:
-		pop temp2
-		pop temp
-		pop r17
-		ret
+			pop temp2
+			pop temp
+			pop r17
+			ret
 
 display_message: ;(&message=Y)
 	push xl
@@ -670,6 +670,7 @@ main:
 	ldi xh, high(Number_container)
 	ldi zl, low(num_stations)
 	ldi zh, high(num_stations)
+
 	ld r15, x
 	st z, r15
 	rcall store_result;(&result, &config_array, mode)
@@ -680,6 +681,7 @@ get_station_name:
 	ldi xh, high(MESSAGE)
 	ldi zl, low(string1<<1)
 	ldi zh, high(string1<<1)
+
 
 	get_string1:
 		lpm r16, z+
