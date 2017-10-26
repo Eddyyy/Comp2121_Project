@@ -430,6 +430,11 @@ get_chars: ;r17 mode=r
 						ldi xl, low(String_container)
 						ldi xh, high(String_container)
 
+						cpi temp, '[';0b01011011
+						brne load_continue
+						ldi temp,' ';0b00100000
+						load_continue:
+
 						push r15
 						clr r15
 						add xl, i
