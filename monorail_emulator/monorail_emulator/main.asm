@@ -67,8 +67,11 @@
 	SecondCounter: .byte 2 
 	TempCounter: .byte 2 
 	Flash_flag: .byte 1
-	Stop_flag: .byte 1
 	Stop_next_station: .byte 1
+	Stop_flag: .byte 1
+	ON_Simulation: .byte 1
+	Motor_speed: .byte 1
+	Speed: .byte 1
 .cseg
 .org 0x00
 jmp RESET
@@ -76,6 +79,8 @@ jmp RESET
 jmp PB_0
 .org INT1addr
 jmp PB_1
+.org INT2addr
+   jmp motor_speed_detective
 .org OVF0addr ; OVF0addr is the address of Timer0 Overflow Interrupt Vector
 jmp Timer0OVF ; jump to the interrupt handler for Timer0 overflow.
 
@@ -124,7 +129,47 @@ clr r19
 ldi xl, low(Stop_flag)
 ldi xh, high(Stop_flag)
 st x, r18
+
+ldi xl, low(ON_Simulation)
+ldi xh, high(ON_Simulation)
 clr r18
+st x, r18
+
+ldi xl, low(Speed)
+ldi xh, high(Speed)
+ser r18
+st x, r18
+clr r18
+
+
+ clear TempCounter ; initialize the temporary counter to 0
+ clear SecondCounter ; initialize the second counter to 0
+ clr r18
+ clr r19
+ ldi r18, 1
+ ldi xl, low(Flash_flag)
+ ldi xh, high(Flash_flag)
+ st x, r18
+clr r22
+clr r23
+ldi r16, (1<<PE4)		;labeled PE2 acctully PE4 
+out DDRE, r16
+clr r16
+
+sts OCR3BL, r16
+sts OCR3BH, r16
+ldi r16, (1 << ISC21 | 1 << ISC11 | 1 << ISC01)      ; set INT2 as falling-
+sts EICRA, r16             ; edge triggered interrupt
+in r16, EIMSK              ; enable INT2
+ori r16, (1<<INT2 | 1<<INT1 | 1<<INT0)
+out EIMSK, r16
+;set timer interrupt
+
+ldi r16, (1<< WGM30)|(1<<COM3B1) ; set the Timer3 to Phase Correct PWM mode.
+sts TCCR3A, r16
+ldi r16, (1 << CS32)
+sts TCCR3B, r16		; Prescaling value=8
+
 
 
 ldi r16, 0b00000000
@@ -379,7 +424,6 @@ sleep_200ms:
 	rcall sleep_50ms
 	ret
 sleep_1s:
-	rcall sleep_200ms
 	rcall sleep_200ms
 	rcall sleep_200ms
 	rcall sleep_200ms
@@ -754,22 +798,61 @@ infloop: rjmp infloop
 	 lds r25, TempCounter+1
 	 adiw r25:r24, 1 ; increase the temporary counter by one
 
-	 cpi r24, low(2600) ; check if (r25:r24) = 7812
 	 ldi r16, high(2600) ; 7812 = 106/128
+	 cpi r24, low(2600) ; check if (r25:r24) = 7812
 	 cpc r25, r16
-	 brne NotSecond
-	
-	
+	 breq is_simulation
+	jmp NotSecond
+	is_simulation:
+	ldi xl,low(ON_Simulation)
+	ldi xh,high(ON_Simulation)
+	ld r19, x
+	cpi r19,1
+	breq Desicion
+	jmp endinc
+
+	Desicion:
 	ldi xl,low(Stop_flag)
 	ldi xh,high(Stop_flag)
 	ld r19, x
 	cpi r19,1
 	breq flashing
 
+
+	jmp Motor_mode
+	Motor_mode:
 	ldi r19, 0b00000000
 	out PORTC, r19
-	jmp endinc
+	ldi xl, low(Motor_speed)
+	ldi xh, high(Motor_speed)
+	ld r18, x
+	ldi xl, low(Speed)
+	ldi xh, high(Speed)
+	ld r19, x
+	cpi r18,50
 
+	brlo accerlation
+	decerlation:
+	sts OCR3BL, r19
+	ldi r17,3
+	sub r19,r17
+
+	rjmp end_motor_mode
+	accerlation:
+	sts OCR3BL, r19
+	ldi r17,3
+	add r19,r17
+
+	end_motor_mode:
+
+	ldi xl, low(Speed)
+	ldi xh, high(Speed)
+	st x, r19
+	ldi xl, low(Motor_speed)
+	ldi xh, high(Motor_speed)
+	clr r19
+	st x,r19
+	rjmp endinc
 	flashing:
 	ldi xl, low(Flash_flag)
 	ldi xh, high(Flash_flag)
@@ -817,8 +900,25 @@ EndIF:
 	 pop r16
 	 reti ; return from the interrupt
 
-
-
+motor_speed_detective:
+	push r16
+	in r16, SREG
+	push r16
+	push r21
+	push xl
+	push xh
+	ldi xl, low(Motor_speed)
+	ldi xh, high(Motor_speed)
+	ld r21, x
+	inc r21
+	st x,r21
+	pop xh
+	pop xl
+	pop r21
+	pop r16
+	out SREG, r16
+	pop r16
+	reti
 
 PB_0:
 	push xl
@@ -1055,6 +1155,13 @@ rjmp get_travel_time
 	st z, r15
 
 
+ldi xl, low(ON_Simulation)
+ldi xh, high(ON_Simulation)
+ldi r18,1
+st x, r18
+clr r18
+
+
 Monorail_emulation_part:
 	ldi zl, low(num_stations)
 	ldi zh, high(num_stations)
@@ -1070,7 +1177,7 @@ Monorail_emulation_part:
 		ldi xh, high(config_array_index)
 		st x,r14
 
-		rcall Get_message
+		rcall Get_massage
 		rcall display_message
 		ldi xl, low(Number_container)
 		ldi xh, high(Number_container)
@@ -1084,7 +1191,7 @@ Monorail_emulation_part:
 		driving_now:
 		cp r16,r17	
 		brsh is_stop
-			rcall wait_1s
+			rcall sleep_1s
 			inc r16
 			rjmp driving_now
 		is_stop:
@@ -1109,17 +1216,18 @@ Monorail_emulation_part:
 			st x, r18
 			cp r16,r17
 			brsh end_stop
-			rcall wait_1s
+			rcall sleep_1s
 			inc r16
 			rjmp stop_now
 			end_stop:
 				ldi xl, low(Stop_flag)
-				ldi xh, high(Stop_flag)
+				ldi xh, high(Stop_flag)		
 				clr r18
 				st x, r18
 				ldi xl, low(Stop_next_station)
 				ldi xh, high(Stop_next_station)	
 				st x, r18
+
 		station_loop_end:
 			inc r14
 			jmp Station_loop
@@ -1128,7 +1236,7 @@ inf: rjmp inf
 
 
 
-Get_message:; get config_array to MESSAGE
+Get_massage:; get config_array to MESSAGE
 	push r16
 	push r17
 	push zl

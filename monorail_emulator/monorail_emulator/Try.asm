@@ -864,7 +864,7 @@ infloop: rjmp infloop
 	ldi r19, 0b00000001
 	out PORTC, r19
 	clr r17
-	rjmp endinc
+	rjmp end_flash
 	flash_2:
 	ldi r19, 0b00000010
 	out PORTC, r19
