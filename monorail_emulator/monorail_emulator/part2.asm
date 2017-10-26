@@ -121,7 +121,18 @@ ldi r16, 0b00000010
 out TCCR0B, r16 ; set prescalar value to 8
 ldi r16, 1<<TOIE0 ; TOIE0 is the bit number of TOIE0 which is 0
 sts TIMSK0, r16 ; enable Timer0 Overflow Interrupt
-
+ser temp
+out DDRC, temp
+clr temp
+out PORTC, temp
+out DDRD, temp
+out PORTD, temp
+ldi temp, (2 << ISC10) | (2 << ISC00)
+sts EICRA, temp
+in temp, EIMSK
+ori temp, (1<<INT0) | (1<<INT1)
+out EIMSK, temp
+sei
 jmp main
 
 ; main keeps scanning the keypad to find which key is pressed.
@@ -680,6 +691,7 @@ infloop: rjmp infloop
 
 
  Timer0OVF: ; interrupt subroutine to Timer0
+	 push r16
 	 in r16, SREG
 	 push r16 ; prologue starts
 	 push YH ; save all conflicting registers in the prologue
@@ -689,6 +701,9 @@ infloop: rjmp infloop
 	 push r19
 	 push xl
 	 push xh
+	 push r23
+	 push r18
+	 push r17
 	 ; Load the value of the temporary counter
 	 lds r24, TempCounter
 	 lds r25, TempCounter+1
@@ -698,26 +713,27 @@ infloop: rjmp infloop
 	 ldi r16, high(2600) ; 7812 = 106/128
 	 cpc r25, r16
 	 brne NotSecond
-
+	
+	
 
 	ldi xl, low(Flash_flag)
-	ldi xh, low(Flash_flag)
-	ld r23,X
+	ldi xh, high(Flash_flag)
+	ld r17,x
 	lds r18, SecondCounter
-	cpi r23,0
+	cpi r17,0
 	breq flash_2
 	flash_1:
 	ldi r19, 0b00000001
 	out PORTC, r19
-	clr r23
+	clr r17
 	rjmp endinc
 	flash_2:
 	ldi r19, 0b00000010
 	out PORTC, r19
-	inc r23
+	ldi r17,1
 
 endinc:
-	 st x,r23
+	 st x,r17
 	 clear TempCounter ; reset the temporary counter
 	 ; Load the value of the second counter
 	 lds r24, SecondCounter
@@ -731,7 +747,9 @@ NotSecond: ; store the new value of the temporary counter
 	 sts TempCounter, r24
 	 sts TempCounter+1, r25
 EndIF:
-
+	 pop r17
+	 pop r18
+	 pop r23
 	 pop xh
 	 pop xl
 	 pop r19
@@ -741,6 +759,7 @@ EndIF:
 	 pop YH
 	 pop r16
 	 out SREG, r16
+	 pop r16
 	 reti ; return from the interrupt
 
 
@@ -754,8 +773,6 @@ EndIF:
 
 
 main:
-
-
 	; asks first question 'Please type the maximum number of stations:' 
 	ldi xl, low(MESSAGE)
 	ldi xh, high(MESSAGE)
