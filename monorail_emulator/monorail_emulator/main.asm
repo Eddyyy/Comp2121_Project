@@ -675,8 +675,11 @@ main:
 	st z, r15
 	rcall store_result;(&result, &config_array, mode)
 
-
+clr r14
+inc r14
 get_station_name:
+	cp r15, r14
+	brlo end_get_station_name
 	ldi xl, low(MESSAGE)
 	ldi xh, high(MESSAGE)
 	ldi zl, low(string1<<1)
@@ -692,7 +695,7 @@ get_station_name:
 	end_get_string1:
 		clr r16
 		ldi r16, '0'
-		add r16, r15
+		add r16, r14
 		st x+, r16
 		ldi r16, ';'
 		st x+, r16
@@ -701,7 +704,43 @@ get_station_name:
 	clr mode
 	rcall get_chars ;return result
 	rcall store_result;(&result, &config_array)
-	dec r15
-	brne get_station_name
+	inc r14
+rjmp get_station_name
+	end_get_station_name:
 
-	inf: rjmp inf
+inf0: rjmp inf0
+
+clr r14
+get_travel_time:
+	cp r14, r15
+	brsh end_get_travel_time
+	ldi xl, low(MESSAGE)
+	ldi xh, high(MESSAGE)
+	ldi zl, low(string2<<1)
+	ldi zh, high(string2<<1)
+
+
+	get_string2:
+		lpm r16, z+
+		cpi r16, ';'
+		breq end_get_string2
+		st x+, r16
+		rjmp get_string2
+	end_get_string2:
+		clr r16
+		ldi r16, '0'
+		add r16, r14
+		st x+, r16
+		ldi r16, ';'
+		st x+, r16
+
+	rcall display_message ;MESSAGE will hold the message to send to LCD
+	clr mode
+	rcall get_chars ;return result
+	rcall store_result;(&result, &config_array)
+	inc r14
+rjmp get_travel_time
+	end_get_travel_time:
+
+
+inf: rjmp inf
