@@ -715,13 +715,13 @@ get_travel_time:
 	ldi zh, high(string2<<1)
 
 
-	get_first_station:
+	get_station_from:
 		lpm r16, z+
 		cpi r16, ';'
-		breq end_get_first_station
+		breq end_get_station_from
 		st x+, r16
-		rjmp get_first_station
-	end_get_first_station:
+		rjmp get_station_from
+	end_get_station_from:
 		clr r16
 		ldi r16, '0'
 		add r16, r14
