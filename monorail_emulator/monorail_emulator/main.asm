@@ -700,7 +700,17 @@ get_station_name:
 		clr r16
 		ldi r16, '0'
 		add r16, r14
+		cpi r16, ':'
+		breq store_ten0
 		st x+, r16
+		rjmp continue_ten0
+		store_ten0:
+		ldi r16, '1'
+		st x+, r16
+		ldi r16, '0'
+		st x+, r16
+
+		continue_ten0:
 		ldi r16, ';'
 		st x+, r16
 
@@ -731,13 +741,17 @@ clr r14
 inc r14
 get_travel_time:
 	cp r15, r14
-	brlo end_get_travel_time
+	brlo long_jump0
+
+	rjmp next
+	long_jump0:
+	jmp end_get_travel_time
+
+	next:
 	ldi xl, low(MESSAGE)
 	ldi xh, high(MESSAGE)
 	ldi zl, low(string2<<1)
 	ldi zh, high(string2<<1)
-
-
 	get_station_from: ;unpack string2
 		lpm r16, z+
 		cpi r16, ';'
@@ -748,8 +762,18 @@ get_travel_time:
 		clr r16
 		ldi r16, '0'
 		add r16, r14
+		cpi r16, ':'
+		breq store_ten1
+		st x+, r16
+		rjmp continue_ten1
+
+		store_ten1:
+		ldi r16, '1'
+		st x+, r16
+		ldi r16, '0'
 		st x+, r16
 
+		continue_ten1:
 		ldi r16, '-'
 		st x+, r16
 
@@ -766,14 +790,25 @@ get_travel_time:
 		ldi r16, '0'
 		add r16, r14
 		inc r16
+
 		cp r14, r15 ;r16<=r15 === r15>=r16
 		breq load_one
+		cpi r16, ':'
+		breq store_ten2
 		st x+, r16
 		rjmp second_continue
 
 		load_one:
 		ldi r16, '1'
 		st x+, r16
+		rjmp second_continue
+
+		store_ten2:
+		ldi r16, '1'
+		st x+, r16
+		ldi r16, '0'
+		st x+, r16
+		rjmp second_continue
 
 	second_continue:
 		ldi r16, ';'
