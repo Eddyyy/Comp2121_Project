@@ -501,10 +501,11 @@ get_chars: ;r17 mode=r
 						clr temp
 						jmp number_mode
 					sum:
-						cpi r17,1
-						brne sum_continue
-						ldi r17, 10
-					sum_continue:
+						clr r18
+						ldi r18,10
+						mul r17,r18
+						mov r17,r0
+
 						add r17,temp
 						ldi temp2,'0'
 						add temp2, temp
