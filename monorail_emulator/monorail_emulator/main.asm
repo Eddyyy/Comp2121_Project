@@ -425,12 +425,8 @@ get_chars: ;r17 mode=r
 					jmp character_mode
 
 					load_end:
-						push temp2
-						ldi xl, low(buffer)
-						ldi xh, high(buffer)
-						ld temp2, x
-						add temp, temp2
-						pop temp2
+						
+						add temp, r17
 						ldi xl, low(String_container)
 						ldi xh, high(String_container)
 
@@ -443,6 +439,7 @@ get_chars: ;r17 mode=r
 						st x, temp
 						do_lcd_data temp
 						inc i
+						clr r17
 						jmp character_mode
 
 
