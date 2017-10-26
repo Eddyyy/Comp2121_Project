@@ -37,6 +37,7 @@ RESET: ldi r16, high(RAMEND) ; initialize the stack pointer SP
 	 push YL
 	 push r25
 	 push r24 ; prologue ends
+
 	 ; Load the value of the temporary counter
 	 lds r24, TempCounter
 	 lds r25, TempCounter+1
@@ -49,11 +50,17 @@ RESET: ldi r16, high(RAMEND) ; initialize the stack pointer SP
 
 
 	lds r18, SecondCounter
-
-	ldi r19,3
+	cpi r23,0
+	breq flash_2
+	flash_1:
+	ldi r19, 0b00000001
 	out PORTC, r19
-	clr r19
+	clr r23
+	rjmp endinc
+	flash_2:
+	ldi r19, 0b00000010
 	out PORTC, r19
+	inc r23
 
 endinc:
 	 clear TempCounter ; reset the temporary counter
@@ -69,6 +76,7 @@ NotSecond: ; store the new value of the temporary counter
 	 sts TempCounter, r24
 	 sts TempCounter+1, r25
 EndIF:
+
 	 pop r24 ; epilogue starts
 	 pop r25 ; restore all conflicting registers from the stack
 	 pop YL

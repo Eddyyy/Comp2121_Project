@@ -78,10 +78,10 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="flash_leds.asm">
+    <Compile Include="get_chars.asm">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="get_chars.asm">
+    <Compile Include="led_flash.asm">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="old_code.asm">

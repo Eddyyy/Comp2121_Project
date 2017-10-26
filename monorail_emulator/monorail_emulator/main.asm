@@ -53,6 +53,7 @@ Number_container: .byte 1
 num_stations: .byte 1
 config_array: .byte 160
 config_array_index: .byte 1
+stop_time: .byte 1
 
 
 .cseg
@@ -61,7 +62,8 @@ jmp RESET
 rjmp bypass
 	string0: .db "MAX NUM STATION:;"
 	string1: .db "NAME STATION;"
-	string2: .db "STATION;"
+	string2: .db "STAT;"
+	string3: .db "STOP TIME:;"
 	err_string: .db "INCORRECT;"
 bypass:
 
@@ -674,6 +676,9 @@ main:
 	ld r15, x
 	st z, r15
 
+ldi zl, low(num_stations)
+ldi zh, high(num_stations)
+ld r15, z
 clr r14
 inc r14
 get_station_name:
@@ -719,7 +724,11 @@ get_station_name:
 rjmp get_station_name
 	end_get_station_name:
 
+ldi zl, low(num_stations)
+ldi zh, high(num_stations)
+ld r15, z
 clr r14
+inc r14
 get_travel_time:
 	cp r15, r14
 	brlo end_get_travel_time
@@ -729,7 +738,7 @@ get_travel_time:
 	ldi zh, high(string2<<1)
 
 
-	get_station_from:
+	get_station_from: ;unpack string2
 		lpm r16, z+
 		cpi r16, ';'
 		breq end_get_station_from
@@ -744,7 +753,9 @@ get_travel_time:
 		ldi r16, '-'
 		st x+, r16
 
-	get_station_to:
+	ldi zl, low(string2<<1)
+	ldi zh, high(string2<<1)
+	get_station_to: ;unpack string2
 		lpm r16, z+
 		cpi r16, ';'
 		breq end_get_station_to
@@ -754,8 +765,17 @@ get_travel_time:
 		clr r16
 		ldi r16, '0'
 		add r16, r14
+		inc r16
+		cp r14, r15 ;r16<=r15 === r15>=r16
+		breq load_one
+		st x+, r16
+		rjmp second_continue
+
+		load_one:
+		ldi r16, '1'
 		st x+, r16
 
+	second_continue:
 		ldi r16, ';'
 		st x+, r16
 
@@ -779,6 +799,33 @@ get_travel_time:
 	inc r14
 rjmp get_travel_time
 	end_get_travel_time:
+
+	; asks first question 'Please type the maximum number of stations:' 
+	ldi xl, low(MESSAGE)
+	ldi xh, high(MESSAGE)
+	ldi zl, low(string3<<1)
+	ldi zh, high(string3<<1)
+
+	get_string3:
+		lpm r16, z+
+		cpi r16, ';'
+		breq end_get_string3
+		st x+, r16
+		rjmp get_string3
+	end_get_string3:
+		st x+, r16
+	
+	rcall display_message ;MESSAGE will hold the message to send to LCD
+
+	ser mode
+	rcall get_chars ;return result
+	ldi xl, low(Number_container)
+	ldi xh, high(Number_container)
+	ldi zl, low(stop_time)
+	ldi zh, high(stop_time)
+
+	ld r15, x
+	st z, r15
 
 
 inf: rjmp inf
