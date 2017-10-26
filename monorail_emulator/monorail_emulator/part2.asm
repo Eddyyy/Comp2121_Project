@@ -387,7 +387,11 @@ get_chars_start:
 	ldi xh, high(buffer)
 	clr temp2
 	st X, temp2
-
+	ldi yl, low(String_container)
+	ldi yh, high(String_container)
+	ldi zl,low(Number_container)
+	ldi zh,high(Number_container)
+	
 	sbrs mode, 0
 	rjmp character_mode
 	rjmp number_mode
@@ -438,8 +442,7 @@ get_chars_start:
 
 		end_get_chars:
 			ldi temp, 0b00111011 ; ';'
-			ldi xl, low(String_container)
-			ldi xh, high(String_container)
+
 
 			push r15
 			clr r15
@@ -447,7 +450,7 @@ get_chars_start:
 			adc xh, r15
 			pop r15
 
-			st x, temp
+			st y+, temp
 			jmp end_get_char
 			
 		compare_end:
@@ -471,21 +474,15 @@ get_chars_start:
 					load_end:
 						
 						add temp, r17
-						ldi xl, low(String_container)
-						ldi xh, high(String_container)
-
+					
 						cpi temp, '[';0b01011011
 						brne load_continue
 						ldi temp,' ';0b00100000
 						load_continue:
 
-						push r15
-						clr r15
-						add xl, i
-						adc xh, r15
-						pop r15
+						
 
-						st x, temp
+						st y+, temp
 						do_lcd_data temp
 						inc i
 						clr r17
@@ -572,9 +569,7 @@ get_chars_start:
 			brsh error_handler
 
 
-			ldi xl,low(Number_container)
-			ldi xh,high(Number_container)
-			st X,r17
+			st z,r17
 			jmp end_get_char
 	error_handler:
 		do_lcd_command 0b00000001 ; clear display
@@ -642,7 +637,11 @@ store_result: ;(&result, &config_array, &start_point)
 	ldi zl, low(config_array_index)
 	ldi zh, high(config_array_index)
 	ld r17, z
-	
+	lsl r17
+	lsl r17
+	lsl r17
+	lsl r17
+
 	ldi zl, low(config_array)
 	ldi zh, high(config_array)
 	clr r16
@@ -674,6 +673,15 @@ store_result: ;(&result, &config_array, &start_point)
 	ldi xl,low(Number_container)
 	ldi xh,high(Number_container)
 	ld r16, x
+
+	push r17
+	push r18
+	ldi r17, 11
+	clr r18
+	add zl, r17
+	adc zh, r18 
+	pop r18
+	pop r17
 	st z, r16
 	jmp store_result_return
 
@@ -842,16 +850,11 @@ get_station_name:
 	clr mode
 	rcall get_chars ;return result
 
+	dec r14
 	ldi xl, low(config_array_index)
 	ldi xh, high(config_array_index)
-	mov temp, r14
-	lsl temp
-	lsl temp
-	lsl temp
-	lsl temp
-	clr temp2
-	add xl, temp
-	adc xh, temp2
+	st x,r14
+	inc r14
 
 	rcall store_result;(&result, &config_array, &index)
 	inc r14
@@ -942,17 +945,12 @@ get_travel_time:
 	ser mode
 	rcall get_chars ;return result
 
+	dec r14
 	ldi xl, low(config_array_index)
 	ldi xh, high(config_array_index)
-	mov temp, r14
-	lsl temp
-	lsl temp
-	lsl temp
-	lsl temp
-	adiw xl:xh, 11
-	clr temp2
-	add xl, temp
-	adc xh, temp2
+	st x,r14
+	inc r14
+
 
 	rcall store_result;(&result, &config_array, &index)
 	inc r14
@@ -986,5 +984,35 @@ rjmp get_travel_time
 	ld r15, x
 	st z, r15
 
+	ldi xl, low(config_array)
+	ldi xh, high(config_array)
+	ldi r16,16
+	clr r17
+	add xl,r16
+	adc xh,r17
+	get_string4:
+		ld r16, x+
+		cpi r16, ';'
+		breq end_get_string4
+		do_lcd_data r16
+		rjmp get_string4
+	end_get_string4:
+		do_lcd_data r16
 
+
+	clr r16
+	ldi xl, low(config_array)
+	ldi xh, high(config_array)
+	ldi r16,16
+	clr r17
+	add xl,r16
+	adc xh,r17
+
+	ldi r16, 11
+	add xl, r16
+	adc xh, r17
+	ld r16,x
+	ldi r17, '0'
+	add r17,r16
+	do_lcd_data r17
 inf: rjmp inf
