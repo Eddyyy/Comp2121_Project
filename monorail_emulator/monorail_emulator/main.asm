@@ -44,15 +44,6 @@
 	rcall lcd_wait
 .endmacro
 
-.macro ten_times
-	push r16
-	lsl @0
-	lsl @0
-	ldi r16, 2
-	add @0, r16
-	pop r16
-.endmacro
-
 
 .dseg
 MESSAGE: .byte 17
@@ -399,7 +390,7 @@ get_chars: ;r17 mode=r
 			ldi r17,0b01010010; S-1
 		compare_D:
 			cpi temp, 0b01000100
-			brne is_buffer_zer0
+			brne is_buffer_zero
 
 		end_get_chars:
 			ldi temp, 0b00111011 ; ';'
@@ -418,7 +409,7 @@ get_chars: ;r17 mode=r
 		compare_end:
 			jmp character_mode
 
-		is_buffer_zer0:
+		is_buffer_zero:
 		cpi r17, 0
 		brne character_loaded
 		jmp character_mode
@@ -479,7 +470,7 @@ get_chars: ;r17 mode=r
 		number_compare_D:
 			cpi temp, 'D'
 			brne is_i_equal_to_two
-			jmp number_end
+			jmp is_number_zero
 
 			is_i_equal_to_two:
 				cpi i,2
@@ -510,9 +501,10 @@ get_chars: ;r17 mode=r
 						clr temp
 						jmp number_mode
 					sum:
-						ten_times r17
-						add r17, temp
-
+						cpi r17,1
+						brne sum_continue
+						ldi r17, 10
+					sum_continue:
 						ldi temp2,'0'
 						add temp2, temp
 						do_lcd_data temp2
@@ -521,6 +513,12 @@ get_chars: ;r17 mode=r
 						inc i
 						clr temp
 						jmp number_mode
+
+		is_number_zero:
+		cpi r17,0
+		brne number_end
+		jmp number_mode
+
 		number_end:
 			cpi r17, 11
 			brsh error_handler
@@ -535,16 +533,16 @@ get_chars: ;r17 mode=r
 		do_lcd_command 0b00000110 ; increment, no display shift
 		do_lcd_command 0b00001110 ; Cursor on, bar, no blink
 
-		clr r16
+		clr r17
 		ldi xl, low(err_string<<1)
 		ldi xh, high(err_string<<1)
 
-		ld r16, x+
+		ld r17, x+
 		display_err:
-			cpi r16, ';'
+			cpi r17, ';'
 			breq end_err
-			do_lcd_data r16
-			ld r16, x+
+			do_lcd_data r17
+			ld r17, x+
 		jmp display_err
 		end_err:
 		do_lcd_command  0b11000000 ;print("\n") -> newline
