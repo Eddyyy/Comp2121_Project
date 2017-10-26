@@ -78,6 +78,9 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="flash_leds.asm">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="get_chars.asm">
       <SubType>Code</SubType>
     </Compile>
