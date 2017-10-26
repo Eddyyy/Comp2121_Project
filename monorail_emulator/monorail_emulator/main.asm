@@ -535,15 +535,15 @@ get_chars: ;r17 mode=r
 		do_lcd_command 0b00001110 ; Cursor on, bar, no blink
 
 		clr r17
-		ldi xl, low(err_string<<1)
-		ldi xh, high(err_string<<1)
+		ldi zl, low(err_string<<1)
+		ldi zh, high(err_string<<1)
 
-		ld r17, x+
+		lpm r17, z+
 		display_err:
 			cpi r17, ';'
 			breq end_err
 			do_lcd_data r17
-			ld r17, x+
+			lpm r17, z+
 		jmp display_err
 		end_err:
 		do_lcd_command  0b11000000 ;print("\n") -> newline
@@ -666,10 +666,6 @@ main:
 	ldi zh, high(num_stations)
 	ld r15, x
 	st z, r15
-	ldi r16, '0'
-	add r16, r15
-	do_lcd_data r16
-	thing: rjmp thing
 	rcall store_result;(&result, &config_array, mode)
 
 
