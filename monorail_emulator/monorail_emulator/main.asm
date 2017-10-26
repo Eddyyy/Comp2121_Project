@@ -501,10 +501,11 @@ get_chars: ;r17 mode=r
 						clr temp
 						jmp number_mode
 					sum:
-						cpi r17,1
-						brne sum_continue
-						ldi r17, 10
-					sum_continue:
+						clr r18
+						ldi r18,10
+						mul r17,r18
+						mov r17,r0
+
 						add r17,temp
 						ldi temp2,'0'
 						add temp2, temp
@@ -538,12 +539,12 @@ get_chars: ;r17 mode=r
 		ldi xl, low(err_string<<1)
 		ldi xh, high(err_string<<1)
 
-		ld r17, x+
+		lpm r17, x+
 		display_err:
 			cpi r17, ';'
 			breq end_err
 			do_lcd_data r17
-			ld r17, x+
+			lpm r17, x+
 		jmp display_err
 		end_err:
 		do_lcd_command  0b11000000 ;print("\n") -> newline
