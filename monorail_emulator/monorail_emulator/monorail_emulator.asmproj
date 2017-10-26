@@ -78,6 +78,9 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="get_chars.asm">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="old_code.asm">
       <SubType>Code</SubType>
     </Compile>

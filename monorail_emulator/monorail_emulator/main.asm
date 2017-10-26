@@ -9,18 +9,20 @@
 ;For LCD data connect D0-D7 to PF0-PF7 respectively and for LCD commands connect BE,RW,E,RS to PA4-PA7 respectively
 
 .include "m2560def.inc"
-.def temp =r22
 .def row =r17
 .def col =r18
 .def mask =r19
 .def temp2 =r20
-.def flag = r23
-.def counter = r24
-.def assci_zero =r21
-.equ PORTLDIR = 0xF0
-.equ INITCOLMASK = 0xEF
-.equ INITROWMASK = 0x01
-.equ ROWMASK = 0x0F
+.def temp =r21
+.def i = r22
+.def mode = r23
+;.def assci_zero =r21
+.equ PORTLDIR = 0xF0;11110000
+.equ INITCOLMASK = 0xEF;11101111
+.equ INITROWMASK = 0x01;00000001
+.equ ROWMASK = 0x0F;00001111
+
+
 
 
 .macro do_lcd_command
@@ -34,9 +36,24 @@
 	rcall lcd_wait
 .endmacro
 
+.dseg
+MESSAGE: .byte 17
+buffer: .byte 1
+String_container: .byte 10
+Number_container: .byte 1
+num_stations: .byte 1
+config_array: .byte 160
+config_array_index: .byte 1
+
 
 .cseg
 jmp RESET
+rjmp bypass
+	string0:.db "MAX NUM STATION:;"
+	string1:.db "NAME STATION;"
+	;string2:.db "325658;"
+bypass:
+
 
 .org 0x72
 RESET:
@@ -68,106 +85,102 @@ do_lcd_command 0b00001110 ; Cursor on, bar, no blink
 
 
 ; main keeps scanning the keypad to find which key is pressed.
-main:
-ldi mask, INITCOLMASK ; initial column mask
-clr col ; initial column
+keypad:
+	ldi mask, INITCOLMASK ; initial column mask
+	clr col ; initial column
 colloop:
-STS PORTL, mask ; set column to mask value
-; (sets column 0 off)
-ldi temp, 0xFF ; implement a delay so the
-; hardware can stabilize
+	STS PORTL, mask ; set column to mask value
+	; (sets column 0 off)
+	ldi temp, 0xFF ; implement a delay so the
+	; hardware can stabilize
 delay:
-dec temp
-brne delay
-LDS temp, PINL ; read PORTL. Cannot use in 
-andi temp, ROWMASK ; read only the row bits
-cpi temp, 0xF ; check if any rows are grounded
-breq nextcol ; if not go to the next column
-ldi mask, INITROWMASK ; initialise row check
-clr row ; initial row
+	dec temp
+	brne delay
+	LDS temp, PINL ; read PORTL. Cannot use in 
+	andi temp, ROWMASK ; read only the row bits
+	cpi temp, 0xF ; check if any rows are grounded
+	breq nextcol ; if not go to the next column
+	ldi mask, INITROWMASK ; initialise row check
+	clr row ; initial row
 rowloop:      
-mov temp2, temp
-and temp2, mask ; check masked bit
-brne skipconv ; if the result is non-zero,
-; we need to look again
-rcall convert ; if bit is clear, convert the bitcode
-jmp main ; and start again
+	mov temp2, temp
+	and temp2, mask ; check masked bit
+	brne skipconv ; if the result is non-zero,
+	; we need to look again
+	rcall convert ; if bit is clear, convert the bitcode
+	jmp keypad ; and start again
 skipconv:
-inc row ; else move to the next row
-lsl mask ; shift the mask to the next bit
-jmp rowloop          
+	inc row ; else move to the next row
+	lsl mask ; shift the mask to the next bit
+	jmp rowloop          
 nextcol:     
-cpi col, 3 ; check if we^Òre on the last column
-brne Continue ; if so, no buttons were pushed,
-; so start again.
-ldi flag,0
-rjmp main
+	cpi col, 3 ; check if we^Òre on the last column
+	brne Continue ; if so, no buttons were pushed,
+
+	ldi xl, low(buffer)
+	ldi xh, high(buffer)
+	ld temp2, X
+	cpi  temp2, 0
+	breq keypad
+	clr xl
+	clr xh
+
+	; so start again.
+	ret;return to caller
 Continue:
-sec ; else shift the column mask:
-; We must set the carry bit
-rol mask ; and then rotate left by a bit,
-; shifting the carry into
-; bit zero. We need this to make
-; sure all the rows have
-; pull-up resistors
-inc col ; increment column value
-jmp colloop ; and check the next column
-; convert function converts the row and column given to a
-; binary number and also outputs the value to PORTC.
-; Inputs come from registers row and col and output is in
-; temp.
+	sec ; else shift the column mask:
+	; We must set the carry bit
+	rol mask ; and then rotate left by a bit,
+	; shifting the carry into
+	; bit zero. We need this to make
+	; sure all the rows have
+	; pull-up resistors
+	inc col ; increment column value
+	jmp colloop ; and check the next column
+	; convert function converts the row and column given to a
+	; binary number and also outputs the value to PORTC.
+	; Inputs come from registers row and col and output is in
+	; temp.
 convert:
-cpi col, 3 ; if column is 3 we have a letter
-breq letters
-cpi row, 3 ; if row is 3 we have a symbol or 0
-breq symbols
-mov temp, row ; otherwise we have a number (1-9)
-lsl temp ; temp = row * 2
-add temp, row ; temp = row * 3
-add temp, col ; add the column address
-; to get the offset from 1
-inc temp ; add 1. Value of switch is
-; row*3 + col + 1.
-jmp number_convert
+	cpi col, 3 ; if column is 3 we have a letter
+	breq letters
+	cpi row, 3 ; if row is 3 we have a symbol or 0
+	breq symbols
+	mov temp, row ; otherwise we have a number (1-9)
+	lsl temp ; temp = row * 2
+	add temp, row ; temp = row * 3
+	add temp, col ; add the column address
+	; to get the offset from 1
+	inc temp ; add 1. Value of switch is
+	; row*3 + col + 1.
+	jmp convert_end
 letters:
-ldi temp, 0b01000001
-add temp, row ; increment from 0xA by the row value
-jmp convert_end
-symbols:
-cpi col, 0 ; check if we have a star
-breq star
-cpi col, 1 ; or if we have zero
-breq zero
-ldi temp, 0b00100011 ; we'll output 0xF for hash
-jmp convert_end
+	ldi temp, 0xA
+	add temp, row ; increment from 0xA by the row value
+	jmp convert_end
+	symbols:
+	cpi col, 0 ; check if we have a star
+	breq star
+	cpi col, 1 ; or if we have zero
+	breq zero
+	ldi temp, 0xF ; we'll output 0xF for hash
+	jmp convert_end
 star:
-ldi temp, 0b00101010 ; we'll output 0xE for star
-jmp convert_end
+	ldi temp, 0xE ; we'll output 0xE for star
+	jmp convert_end
 zero:
-clr temp ; set to zero
-jmp number_convert
-
-
-number_convert:
-ldi assci_zero, 0x30
-add temp, assci_zero
-
+	clr temp ; set to zero
 convert_end:
-cpi counter,17 ; 16 is maximum number of LCD
-brlo not_clean_line
-ldi counter, 1
-do_lcd_command 0b00000001 ; clear display
-do_lcd_command 0b00001110 ; Cursor on, bar, no blink
-do_lcd_data temp
-rjmp convert_ret
-not_clean_line:
-cpi flag, 1
-breq convert_ret
-ldi flag, 1
-inc counter
-do_lcd_data temp
+	ldi xl, low(buffer)
+	ldi xh, high(buffer)
+	ld temp2, X
+	cpi  temp2, 0
+	brne convert_ret
+	std X, temp
+	clr xl
+	clr xh
 convert_ret:
-ret ; return to caller
+	ret ; return to caller
 
 ;-------------------------------LCD PART
 
@@ -270,9 +283,9 @@ sleep_5ms:
 ; 999ms 999us 500 ns at 16 MHz
 ; extra 8 cycles for rcall, ret, push and pop makes 16*10^6 cycles at 16 MHz
 wait_1s:
-	push r23
-	push r24
-	push r25
+	push r18
+	push r19
+	push r20
 
     ldi  r18, 82
     ldi  r19, 43
@@ -284,27 +297,306 @@ L1: dec  r20
     dec  r18
     brne L1
     rjmp PC+1
-	pop r25
-	pop r24
-	pop r23
+	pop r20
+	pop r19
+	pop r18
 	ret
 
 
-get_str: ;(mode=r17, &result=X)
-	;while(c<10 or temp != D
-	rcall keypad
-	;do logic on temp takes into account mode
-	display temp ;if temp != A,B,C,D
-	;if temp == D && mode == 1 --> store ';'
+get_chars:
+	clr r17;set r17 as buffer of get_chars
+	clr i
+	; initialize buffer
+	ldi xl, low(buffer)
+	ldi xh, high(buffer)
+	clr temp2
+	st X, temp2
+
+	sbrs mode, 0
+	rjmp character_mode
+	rjmp number_mode
+
+
+
+	character_mode:
+		cpi i, 11
+		brlo not_error_char
+		jmp error_handler
+	not_error_char:
+		rcall keypad
+
+		ldi xl, low(buffer)
+		ldi xh, high(buffer)
+		ld temp, X
+		clr temp2
+		st X, temp2; initialize buffer
+
+		cpi i,0;
+		brne compare_A; clear LCD
+		do_lcd_command 0b00000001 ; clear display
+		do_lcd_command 0b00000110 ; increment, no display shift
+		do_lcd_command 0b00001110 ; Cursor on, bar, no blink
+
+		compare_A:
+			cpi temp, 0b01000001
+			brne compare_B
+			ldi r17,0b01000000; A-1
+			rjmp compare_end
+		compare_B:
+			cpi temp, 0b01000010
+			brne compare_C
+			ldi r17,0b01001001; J-1
+			rjmp compare_end
+		compare_C:
+			cpi temp, 0b01000011
+			brne compare_D
+			ldi r17,0b01010010; S-1
+		compare_D:
+			cpi temp, 0b01000100
+			brne is_buffer_zer0
+
+		end_get_chars:
+			ldi temp, 00111011
+			ldi xl, low(String_container)
+			ldi xh, high(String_container)
+			std x+i, temp
+			ret
+			
+		compare_end:
+			jmp character_mode
+
+		is_buffer_zer0:
+		cpi r17, 0
+		brne character_loaded
+		jmp character_mode
+
+			character_loaded:
+				cpi temp, 0
+				brne temp_not_zero
+				jmp character_mode
+
+				temp_not_zero:
+					cpi temp, 11
+					brlo load_end
+					jmp character_mode
+
+					load_end:
+						add temp, buffer
+						ldi xl, low(String_container)
+						ldi xh, high(String_container)
+						std x+i, temp
+						do_lcd_data temp
+						inc i
+						jmp character_mode
+
+
+	number_mode:
+		cpi i, 3
+		brlo not_error_number
+		jmp error_handler
+	not_error_number:
+		rcall keypad
+		ldi xl, low(buffer)
+		ldi xh, high(buffer)
+		ld temp, X
+		clr temp2
+		st X, temp2; initialize buffer
+
+		cpi i,0;
+		brne number_compare_D; clear LCD
+		do_lcd_command 0b00000001 ; clear display
+		do_lcd_command 0b00000110 ; increment, no display shift
+		do_lcd_command 0b00001110 ; Cursor on, bar, no blink
+
+		number_compare_D:
+			cpi temp, 0b01000100
+			brne is_i_equal_to_two
+			jmp number_end
+
+			is_i_equal_to_two:
+				cpi i,2
+				brne temp_test
+				jmp error_handler
+
+				temp_test:
+					cpi temp, 10
+					brlo number_continue
+					jmp number_mode
+
+				number_continue:
+					cpi r17,0
+					brne sum
+					cpi temp,0
+					brne load
+					jmp number_mode
+
+					load:
+						mov r17, temp
+						inc i
+						clr temp
+						jmp number_mode
+					sum:
+						ten_times r17
+						add r17, temp
+						inc i
+						clr temp
+						jmp number_mode
+		number_end:
+			cpi r17, 11
+			brsh error_handler
+			ldi xl,low(Number_container)
+			ldi xh,high(Number_container)
+			st X,r17
+			ret
+	error_handler:
+		do_lcd_command 0b00000001 ; clear display
+		do_lcd_command 0b00000110 ; increment, no display shift
+		do_lcd_command 0b00001110 ; Cursor on, bar, no blink
+		do_lcd_data 'I'
+		do_lcd_data 'n'
+		do_lcd_data 'c'
+		do_lcd_data 'o'
+		do_lcd_data 'r'
+		do_lcd_data 'r'
+		do_lcd_data 'e'
+		do_lcd_data 'c'
+		do_lcd_data 't'
+		do_lcd_data '!'
+		jmp get_chars
+
+display_message: ;(&message=Y)
+	push xl
+	push xh
+	push r16
+	clr r16
+	ldi xl, low(MESSAGE)
+	ldi xh, high(MESSAGE)
+
+	ld r16, x+
+	display_char:
+		cpi r16, ';'
+		breq end_str
+		do_lcd_data r16
+		ld r16, x+
+	jmp display_char
+
+	end_str:
+	do_lcd_data r16
+
+	pop r16
+	pop xh
+	pop xl
+
+store_result: ;(&result, &config_array, &start_point)
+	push xl
+	push xh
+	push zl
+	push zh
+	push r16
+	push r17
+	
+
+	ldi zl, low(config_array_index)
+	ldi zh, high(config_array_index)
+	ld r17, z
+	
+	ldi zl, low(config_array)
+	ldi zh, high(config_array)
+	clr r16
+	add zl, r17
+	adc zh, r16
+
+	sbrs mode, 0
+	rjmp store_characters
+	rjmp store_numbers
+
+	store_characters:
+	ldi xl, low(String_container)
+	ldi xh, high(String_container)
+	
+	ld r16, x+
+	store_char_loop:
+		cpi r16, ';'
+		breq end_store_char_loop
+		st z+ r16
+		ld r16, x+
+	jmp store_char_loop
+
+	end_store_char_loop:
+
+	
+	jmp store_result_return
+
+	store_numbers:
+	ldi xl,low(Number_container)
+	ldi xh,high(Number_container)
+
+	jmp store_result_return
+
+store_result_return:
+	pop r17
+	pop r16
+	pop zh
+	pop zl
+	pop xh
+	pop xl
 	ret
-
-display_message: ;(&message)
-
-store_result: ;(&result, &config_array)
 
 main:
 	; asks first question 'Please type the maximum number of stations:' 
-	display_message,xl,xh ;A will hold the message to send to LCD
+	ldi xl, low(MESSAGE)
+	ldi xh, high(MESSAGE)
+	ldi zl, low(string0<<1)
+	ldi zh, high(string0<<1)
+
+	get_string0:
+		lpm r16, z+
+		cpi r16, ';'
+		breq end_get_string0
+		st x+, r16
+		rjmp get_string0
+	end_get_string0:
+		st x+, r16
+
+	rcall display_message ;MESSAGE will hold the message to send to LCD
+	do_lcd_command  0b11000000 ;print("\n") -> newline
+	ser mode
+	rcall get_str ;return result
+	ldi xl, low(Number_container)
+	ldi xh, high(Number_container)
+	ldi zl, low(num_stations)
+	ldi zh, high(num_stations)
+	ld r15, x
+	st z, r15
+	rcall store_result;(&result, &config_array)
+
+	do_lcd_command 0b00000001 ;clear the display
+
+
+get_station_name:
+	ldi xl, low(MESSAGE)
+	ldi xh, high(MESSAGE)
+	ldi zl, low(string1<<1)
+	ldi zh, high(string1<<1)
+
+	get_string1:
+		lpm r16, z+
+		cpi r16, ';'
+		breq end_get_string1
+		st x+, r16
+		rjmp get_string1
+	end_get_string1:
+		clr r16
+		ldi r16, '0'
+		add r16, r15
+		st x+, r16
+		ldi r16, ';'
+		st x+, r16
+
+	rcall display_message ;MESSAGE will hold the message to send to LCD
+	do_lcd_command 0b11000000 ;print("\n") -> newline
 	clr mode
 	rcall get_str ;return result
-	store_result;(&result, &config_array)
+	rcall store_result;(&result, &config_array)
+	dec r15
+	brne get_station_name
