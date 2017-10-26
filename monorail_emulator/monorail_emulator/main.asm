@@ -451,9 +451,9 @@ get_chars: ;r17 mode=r
 		st X, temp2; initialize buffer
 
 		cpi temp,'0'
-		brlo compare_A
+		brlo number_compare_D
 		cpi temp,0b00111010 ; character after '9'
-		brsh compare_A
+		brsh number_compare_D
 		ldi temp2,'0'
 		sub temp, temp2
 		clr temp2
