@@ -664,10 +664,6 @@ main:
 		st x+, r16
 	
 	rcall display_message ;MESSAGE will hold the message to send to LCD
-
-	ldi r16, 'G'
-	do_lcd_data r16
-
 	ser mode
 	rcall get_chars ;return result
 	ldi xl, low(Number_container)
@@ -716,21 +712,21 @@ inf0: rjmp inf0
 
 clr r14
 get_travel_time:
-	cp r14, r15
-	brsh end_get_travel_time
+	cp r15, r14
+	brlo end_get_travel_time
 	ldi xl, low(MESSAGE)
 	ldi xh, high(MESSAGE)
 	ldi zl, low(string2<<1)
 	ldi zh, high(string2<<1)
 
 
-	get_string2:
+	get_first_station:
 		lpm r16, z+
 		cpi r16, ';'
-		breq end_get_string2
+		breq end_get_first_station
 		st x+, r16
-		rjmp get_string2
-	end_get_string2:
+		rjmp get_first_station
+	end_get_first_station:
 		clr r16
 		ldi r16, '0'
 		add r16, r14
