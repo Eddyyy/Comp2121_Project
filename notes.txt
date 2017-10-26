@@ -68,13 +68,11 @@ main:
 	
 	emulation:
 	while (true) {
-	running:
-		run_motor(60)
-		wait(time between stop seconds)
-	not_running:
-		display_message(&message)
-		flash leds
-		wait(time stop)
+		display_next_station()
+		got_to_next_station()
+		if (flag0) {
+		stop_at_station(sec)
+		}
 	}
 	
 bugs:
