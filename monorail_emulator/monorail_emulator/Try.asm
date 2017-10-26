@@ -798,8 +798,8 @@ infloop: rjmp infloop
 	 lds r25, TempCounter+1
 	 adiw r25:r24, 1 ; increase the temporary counter by one
 
-	 cpi r24, low(2600) ; check if (r25:r24) = 7812
 	 ldi r16, high(2600) ; 7812 = 106/128
+	 cpi r24, low(2600) ; check if (r25:r24) = 7812
 	 cpc r25, r16
 	 breq is_simulation
 	jmp NotSecond
@@ -829,7 +829,7 @@ infloop: rjmp infloop
 	ldi xl, low(Speed)
 	ldi xh, high(Speed)
 	ld r19, x
-	cpi r18,80
+	cpi r18,50
 
 	brlo accerlation
 	decerlation:
