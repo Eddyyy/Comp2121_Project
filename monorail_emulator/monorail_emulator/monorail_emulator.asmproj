@@ -15,7 +15,7 @@
     <Name>monorail_emulator</Name>
     <RootNamespace>monorail_emulator</RootNamespace>
     <ToolchainFlavour>Native</ToolchainFlavour>
-    <EntryFile>$(MSBuildProjectDirectory)\worked_edition.asm</EntryFile>
+    <EntryFile>$(MSBuildProjectDirectory)\Try.asm</EntryFile>
     <KeepTimersRunning>true</KeepTimersRunning>
     <OverrideVtor>false</OverrideVtor>
     <CacheFlash>true</CacheFlash>

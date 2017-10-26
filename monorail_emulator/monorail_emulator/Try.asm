@@ -901,6 +901,7 @@ EndIF:
 	 reti ; return from the interrupt
 
 motor_speed_detective:
+	push r16
 	in r16, SREG
 	push r16
 	push r21
@@ -916,6 +917,7 @@ motor_speed_detective:
 	pop r21
 	pop r16
 	out SREG, r16
+	pop r16
 	reti
 
 PB_0:
