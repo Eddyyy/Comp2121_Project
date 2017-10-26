@@ -376,21 +376,21 @@ get_chars_start:
 		clr temp2
 
 		compare_A:
-			cpi temp, 0b01000001
+			cpi temp, 'A'
 			brne compare_B
 			ldi r17,0b01000000; A-1
 			rjmp compare_end
 		compare_B:
-			cpi temp, 0b01000010
+			cpi temp, 'B'
 			brne compare_C
 			ldi r17,0b01001001; J-1
 			rjmp compare_end
 		compare_C:
-			cpi temp, 0b01000011
+			cpi temp, 'C'
 			brne compare_D
 			ldi r17,0b01010010; S-1
 		compare_D:
-			cpi temp, 0b01000100
+			cpi temp, 'D'
 			brne is_buffer_zero
 
 		end_get_chars:
@@ -411,6 +411,9 @@ get_chars_start:
 			jmp character_mode
 
 		is_buffer_zero:
+		ldi temp2,'0'
+		add temp2, r17
+		do_lcd_data temp2
 		cpi r17, 0
 		brne character_loaded
 		jmp character_mode
