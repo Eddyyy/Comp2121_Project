@@ -110,6 +110,18 @@ do_lcd_command LCD_DISP_CLR ; clear display
 do_lcd_command LCD_ENTR_SET ; increment, no display shift
 do_lcd_command LCD_DISP_ON ; Cursor on, bar, no blink
 
+clear TempCounter ; initialize the temporary counter to 0
+clear SecondCounter ; initialize the second counter to 0
+clr r18
+clr r19
+
+ldi r16, 0b00000000
+out TCCR0A, r16
+ldi r16, 0b00000010
+out TCCR0B, r16 ; set prescalar value to 8
+ldi r16, 1<<TOIE0 ; TOIE0 is the bit number of TOIE0 which is 0
+sts TIMSK0, r16 ; enable Timer0 Overflow Interrupt
+
 jmp main
 
 ; main keeps scanning the keypad to find which key is pressed.
@@ -742,19 +754,6 @@ EndIF:
 
 
 main:
-
-
-	 clear TempCounter ; initialize the temporary counter to 0
-	 clear SecondCounter ; initialize the second counter to 0
-	 clr r18
-	 clr r19
-
-	 ldi r16, 0b00000000
-	 out TCCR0A, r16
-	 ldi r16, 0b00000010
-	 out TCCR0B, r16 ; set prescalar value to 8
-	 ldi r16, 1<<TOIE0 ; TOIE0 is the bit number of TOIE0 which is 0
-	 sts TIMSK0, r16 ; enable Timer0 Overflow Interrupt
 
 
 	; asks first question 'Please type the maximum number of stations:' 
