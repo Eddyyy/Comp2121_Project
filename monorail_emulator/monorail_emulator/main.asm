@@ -668,7 +668,9 @@ main:
 	ld r15, x
 	st z, r15
 	ldi r16, '0'
+	add r16, r15
 	do_lcd_data r16
+	thing: rjmp thing
 	rcall store_result;(&result, &config_array, mode)
 
 
