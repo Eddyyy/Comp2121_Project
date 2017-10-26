@@ -391,17 +391,17 @@ get_chars_start:
 			ldi r17,0b01010010; S-1
 		compare_D:
 			cpi temp, 'D'
-			brne character_loaded
-			cpi i, 0
+			brne block_number_first
+			cpi i,0
 			brne end_get_chars
 			jmp character_mode
-
 
 		end_get_chars:
 			ldi temp, 0b00111011 ; ';'
 			ldi xl, low(String_container)
 			ldi xh, high(String_container)
 
+			push r15
 			clr r15
 			add xl, i
 			adc xh, r15
@@ -412,6 +412,11 @@ get_chars_start:
 			
 		compare_end:
 			jmp character_mode
+
+		block_number_first:
+		cpi r17, 0
+		brne character_loaded
+		jmp character_mode
 
 			character_loaded:
 				cpi temp, 0
@@ -658,6 +663,10 @@ main:
 		st x+, r16
 	
 	rcall display_message ;MESSAGE will hold the message to send to LCD
+
+	ldi r16, 'G'
+	do_lcd_data r16
+
 	ser mode
 	rcall get_chars ;return result
 	ldi xl, low(Number_container)
@@ -706,21 +715,21 @@ inf0: rjmp inf0
 
 clr r14
 get_travel_time:
-	cp r15, r14
-	brlo end_get_travel_time
+	cp r14, r15
+	brsh end_get_travel_time
 	ldi xl, low(MESSAGE)
 	ldi xh, high(MESSAGE)
 	ldi zl, low(string2<<1)
 	ldi zh, high(string2<<1)
 
 
-	get_station_from:
+	get_string2:
 		lpm r16, z+
 		cpi r16, ';'
-		breq end_get_station_from
+		breq end_get_string2
 		st x+, r16
-		rjmp get_station_from
-	end_get_station_from:
+		rjmp get_string2
+	end_get_string2:
 		clr r16
 		ldi r16, '0'
 		add r16, r14
