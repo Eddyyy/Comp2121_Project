@@ -1069,7 +1069,7 @@ Monorail_emulation_part:
 		ldi xh, high(config_array_index)
 		st x,r14
 
-		rcall Get_massage
+		rcall Get_message
 		rcall display_message
 		ldi xl, low(Number_container)
 		ldi xh, high(Number_container)
@@ -1127,7 +1127,7 @@ inf: rjmp inf
 
 
 
-Get_massage:; get config_array to MESSAGE
+Get_message:; get config_array to MESSAGE
 	push r16
 	push r17
 	push zl
