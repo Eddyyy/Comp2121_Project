@@ -728,6 +728,20 @@ get_travel_time:
 		ldi r16, ';'
 		st x+, r16
 
+	get_station_to:
+		lpm r16, z+
+		cpi r16, ';'
+		breq end_get_station_to
+		st x+, r16
+		rjmp get_station_to
+	end_get_station_to:
+		clr r16
+		ldi r16, '0'
+		add r16, r14
+		st x+, r16
+		ldi r16, ';'
+		st x+, r16
+
 	rcall display_message ;MESSAGE will hold the message to send to LCD
 	clr mode
 	rcall get_chars ;return result
