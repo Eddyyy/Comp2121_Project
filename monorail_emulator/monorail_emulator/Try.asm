@@ -870,8 +870,9 @@ infloop: rjmp infloop
 	out PORTC, r19
 	ldi r17,1
 
-endinc:
+end_flash:
 	 st x,r17
+endinc:
 	 clear TempCounter ; reset the temporary counter
 	 ; Load the value of the second counter
 	 lds r24, SecondCounter
