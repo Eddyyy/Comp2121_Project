@@ -90,6 +90,9 @@
     <Compile Include="main.asm">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="part2.asm">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="run_motor.asm">
       <SubType>Code</SubType>
     </Compile>
