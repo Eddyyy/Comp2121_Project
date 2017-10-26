@@ -68,7 +68,7 @@
 	TempCounter: .byte 2 
 	Flash_flag: .byte 1
 	Stop_flag: .byte 1
-
+	Stop_next_station: .byte 1
 .cseg
 .org 0x00
 jmp RESET
@@ -823,8 +823,8 @@ PB_0:
 	push xl
 	push xh
 	push r16
-	ldi xl,low(Stop_flag)
-	ldi xh,high(Stop_flag)
+	ldi xl,low(Stop_next_station)
+	ldi xh,high(Stop_next_station)
 	ldi r16,1
 	st x, r16
 	pop r16
@@ -836,8 +836,8 @@ PB_1:
 	push xl
 	push xh
 	push r16
-	ldi xl,low(Stop_flag)
-	ldi xh,high(Stop_flag)
+	ldi xl,low(Stop_next_station)
+	ldi xh,high(Stop_next_station)
 	ldi r16,1
 	st x, r16
 	pop r16
@@ -1094,14 +1094,18 @@ Monorail_emulation_part:
 		ldi xh, high(stop_time)		
 		ld r17,x
 
-		ldi xl, low(Stop_flag)
-		ldi xh, high(Stop_flag)		
+		ldi xl, low(Stop_next_station)
+		ldi xh, high(Stop_next_station)		
 		ld r18,x
 
 		cpi r18,1
 		breq stop_now
 		jmp station_loop_end
 		stop_now:
+			ldi xl, low(Stop_flag)
+			ldi xh, high(Stop_flag)		
+			ldi r18,1
+			st x, r18
 			cp r16,r17
 			brsh end_stop
 			rcall sleep_1s
@@ -1111,6 +1115,9 @@ Monorail_emulation_part:
 				ldi xl, low(Stop_flag)
 				ldi xh, high(Stop_flag)
 				clr r18
+				st x, r18
+				ldi xl, low(Stop_next_station)
+				ldi xh, high(Stop_next_station)	
 				st x, r18
 		station_loop_end:
 			inc r14
