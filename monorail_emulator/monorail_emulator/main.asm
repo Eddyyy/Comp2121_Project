@@ -173,23 +173,29 @@ convert:
 	; to get the offset from 1
 	inc temp ; add 1. Value of switch is
 	; row*3 + col + 1.
-	jmp convert_end
+	jmp number_convert
 letters:
-	ldi temp, 0xA
+	ldi temp, 'A'
 	add temp, row ; increment from 0xA by the row value
 	jmp convert_end
-	symbols:
+symbols:
 	cpi col, 0 ; check if we have a star
 	breq star
 	cpi col, 1 ; or if we have zero
 	breq zero
-	ldi temp, 0xF ; we'll output 0xF for hash
+	ldi temp, 0b00100011 ; we'll output 0xF for hash
 	jmp convert_end
 star:
-	ldi temp, 0xE ; we'll output 0xE for star
+	ldi temp, 0b00101010; we'll output 0xE for star
 	jmp convert_end
 zero:
 	clr temp ; set to zero
+
+number_convert:
+	ldi temp2, '0'
+	add temp, temp2
+	clr temp2
+
 convert_end:
 	ldi xl, low(buffer)
 	ldi xh, high(buffer)
@@ -352,6 +358,14 @@ get_chars: ;r17 mode=r
 		clr temp2
 		st X, temp2; initialize buffer
 
+		cpi temp,'0'
+		brlo compare_A
+		cpi temp,0b00111010 ; character after '9'
+		brsh compare_A
+		ldi temp2,'0'
+		sub temp, temp2
+		clr temp2
+
 		compare_A:
 			cpi temp, 0b01000001
 			brne compare_B
@@ -436,7 +450,13 @@ get_chars: ;r17 mode=r
 		clr temp2
 		st X, temp2; initialize buffer
 
-		do_lcd_data temp
+		cpi temp,'0'
+		brlo compare_A
+		cpi temp,0b00111010 ; character after '9'
+		brsh compare_A
+		ldi temp2,'0'
+		sub temp, temp2
+		clr temp2
 
 
 		number_compare_D:
