@@ -137,9 +137,9 @@ st x, r18
 
 ldi xl, low(Speed)
 ldi xh, high(Speed)
-ser r18
-st x, r18
 clr r18
+st x, r18
+;clr r18
 
 
  clear TempCounter ; initialize the temporary counter to 0
@@ -837,15 +837,15 @@ infloop: rjmp infloop
 	sts OCR3BL, r19
 	ldi r17,3
 	sub r19,r17
-
 	rjmp end_motor_mode
+
 	accerlation:
 	sts OCR3BL, r19
 	ldi r17,3
 	add r19,r17
+	rjmp end_motor_mode
 
 	end_motor_mode:
-
 	ldi xl, low(Speed)
 	ldi xh, high(Speed)
 	st x, r19
@@ -854,6 +854,7 @@ infloop: rjmp infloop
 	clr r19
 	st x,r19
 	rjmp endinc
+
 	flashing:
 	ldi xl, low(Flash_flag)
 	ldi xh, high(Flash_flag)
@@ -950,7 +951,7 @@ PB_1:
 
 
 
-
+inf0: rjmp inf0
 
 main:
 	; asks first question 'Please type the maximum number of stations:' 

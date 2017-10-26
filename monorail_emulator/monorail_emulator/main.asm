@@ -830,22 +830,22 @@ infloop: rjmp infloop
 	ldi xl, low(Speed)
 	ldi xh, high(Speed)
 	ld r19, x
-	cpi r18,50
-
+	cpi r18,80
 	brlo accerlation
+
 	decerlation:
 	sts OCR3BL, r19
 	ldi r17,3
 	sub r19,r17
-
 	rjmp end_motor_mode
+
 	accerlation:
 	sts OCR3BL, r19
 	ldi r17,3
 	add r19,r17
+	rjmp end_motor_mode
 
 	end_motor_mode:
-
 	ldi xl, low(Speed)
 	ldi xh, high(Speed)
 	st x, r19
@@ -854,6 +854,7 @@ infloop: rjmp infloop
 	clr r19
 	st x,r19
 	rjmp endinc
+
 	flashing:
 	ldi xl, low(Flash_flag)
 	ldi xh, high(Flash_flag)
@@ -950,7 +951,7 @@ PB_1:
 
 
 
-
+inf0: rjmp inf0
 
 main:
 	; asks first question 'Please type the maximum number of stations:' 
@@ -1185,9 +1186,9 @@ Monorail_emulation_part:
 		ldi xh, high(Number_container)
 		ld r17,x
 
-		ldi r22, '0'
-		add r22,r17
-		do_lcd_data r22
+		;ldi r22, '0'
+		;add r22,r17
+		;do_lcd_data r22
 
 		clr r16
 		driving_now:
