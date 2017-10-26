@@ -15,7 +15,7 @@
     <Name>monorail_emulator</Name>
     <RootNamespace>monorail_emulator</RootNamespace>
     <ToolchainFlavour>Native</ToolchainFlavour>
-    <EntryFile>$(MSBuildProjectDirectory)\main.asm</EntryFile>
+    <EntryFile>$(MSBuildProjectDirectory)\worked_edition.asm</EntryFile>
     <KeepTimersRunning>true</KeepTimersRunning>
     <OverrideVtor>false</OverrideVtor>
     <CacheFlash>true</CacheFlash>
@@ -84,6 +84,9 @@
     <Compile Include="led_flash.asm">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="led_flash2.asm">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="old_code.asm">
       <SubType>Code</SubType>
     </Compile>
@@ -94,6 +97,12 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="run_motor.asm">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Try.asm">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="worked_edition.asm">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
