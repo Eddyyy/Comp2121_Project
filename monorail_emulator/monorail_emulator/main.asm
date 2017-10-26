@@ -585,6 +585,7 @@ display_message: ;(&message=Y)
 	pop r16
 	pop xh
 	pop xl
+	ret
 
 store_result: ;(&result, &config_array, &start_point)
 	push xl
@@ -641,7 +642,7 @@ store_result_return:
 	pop xh
 	pop xl
 	ret
-
+infloop: rjmp infloop
 main:
 	; asks first question 'Please type the maximum number of stations:' 
 	ldi xl, low(MESSAGE)
@@ -657,10 +658,12 @@ main:
 		rjmp get_string0
 	end_get_string0:
 		st x+, r16
-
 	
 	rcall display_message ;MESSAGE will hold the message to send to LCD
-	
+
+	ldi r16, 'G'
+	do_lcd_data r16
+
 	ser mode
 	rcall get_chars ;return result
 	ldi xl, low(Number_container)
