@@ -105,6 +105,15 @@ do_lcd_command LCD_DISP_ON ; Cursor on, bar, no blink
 jmp main
 
 ; main keeps scanning the keypad to find which key is pressed.
+keypad_start:
+push row
+push col
+push mask
+push temp2
+push temp
+push i
+push mode
+
 keypad:
 	ldi mask, INITCOLMASK ; initial column mask
 	clr col ; initial column
@@ -144,6 +153,14 @@ nextcol:
 	breq keypad
 	clr xl
 	clr xh
+
+	pop mode
+	pop i
+	pop temp
+	pop temp2
+	pop mask
+	pop col
+	pop row
 
 	; so start again.
 	ret;return to caller
@@ -350,7 +367,7 @@ get_chars: ;r17 mode=r
 		brlo not_error_char
 		jmp error_handler
 	not_error_char:
-		rcall keypad
+		rcall keypad_start
 
 		ldi xl, low(buffer)
 		ldi xh, high(buffer)
@@ -443,7 +460,7 @@ get_chars: ;r17 mode=r
 		brlo not_error_number
 		jmp error_handler
 	not_error_number:
-		rcall keypad
+		rcall keypad_start
 		ldi xl, low(buffer)
 		ldi xh, high(buffer)
 		ld temp, X
@@ -507,10 +524,7 @@ get_chars: ;r17 mode=r
 		number_end:
 			cpi r17, 11
 			brsh error_handler
-			
-			ldi temp2,'1'
-			do_lcd_data temp2
-			clr temp2
+
 
 			ldi xl,low(Number_container)
 			ldi xh,high(Number_container)
