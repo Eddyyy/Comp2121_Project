@@ -693,3 +693,5 @@ get_station_name:
 	rcall store_result;(&result, &config_array)
 	dec r15
 	brne get_station_name
+
+	inf: rjmp inf
