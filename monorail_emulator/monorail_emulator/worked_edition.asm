@@ -1083,7 +1083,7 @@ Monorail_emulation_part:
 		driving_now:
 		cp r16,r17	
 		brsh is_stop
-			rcall sleep_1s
+			rcall wait_1s
 			inc r16
 			rjmp driving_now
 		is_stop:
@@ -1108,7 +1108,7 @@ Monorail_emulation_part:
 			st x, r18
 			cp r16,r17
 			brsh end_stop
-			rcall sleep_1s
+			rcall wait_1s
 			inc r16
 			rjmp stop_now
 			end_stop:
