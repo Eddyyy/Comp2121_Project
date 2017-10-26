@@ -59,6 +59,12 @@ main:
 		store_result;(&result, &config_array)
 	}
 	
+	for(i=0;i<result;i++) {
+		display_message,xl,xh ;A will hold the message to send to LCD
+		clr mode
+		rcall get_str ;return result
+		store_result;(&result, &config_array)
+	}
 	
 	emulation:
 	while (true) {
@@ -71,6 +77,8 @@ main:
 		wait(time stop)
 	}
 	
-int0:
-	ldi flag, 1
-	reti
+bugs:
+	keypad typing zero
+	keypad typing 'D' at the begining
+	fix refresh error handler
+	finish main
