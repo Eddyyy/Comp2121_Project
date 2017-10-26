@@ -664,9 +664,6 @@ main:
 	
 	rcall display_message ;MESSAGE will hold the message to send to LCD
 
-	ldi r16, 'G'
-	do_lcd_data r16
-
 	ser mode
 	rcall get_chars ;return result
 	ldi xl, low(Number_container)
@@ -676,7 +673,6 @@ main:
 
 	ld r15, x
 	st z, r15
-	rcall store_result;(&result, &config_array, mode)
 
 clr r14
 inc r14
@@ -706,28 +702,40 @@ get_station_name:
 	rcall display_message ;MESSAGE will hold the message to send to LCD
 	clr mode
 	rcall get_chars ;return result
-	rcall store_result;(&result, &config_array)
+
+	ldi xl, low(config_array_index)
+	ldi xh, high(config_array_index)
+	mov temp, r14
+	lsl temp
+	lsl temp
+	lsl temp
+	lsl temp
+	clr temp2
+	add xl, temp
+	adc xh, temp2
+
+	rcall store_result;(&result, &config_array, &index)
 	inc r14
 rjmp get_station_name
 	end_get_station_name:
 
 clr r14
 get_travel_time:
-	cp r14, r15
-	brsh end_get_travel_time
+	cp r15, r14
+	brlo end_get_travel_time
 	ldi xl, low(MESSAGE)
 	ldi xh, high(MESSAGE)
 	ldi zl, low(string2<<1)
 	ldi zh, high(string2<<1)
 
 
-	get_string2:
+	get_station_from:
 		lpm r16, z+
 		cpi r16, ';'
-		breq end_get_string2
+		breq end_get_station_from
 		st x+, r16
-		rjmp get_string2
-	end_get_string2:
+		rjmp get_station_from
+	end_get_station_from:
 		clr r16
 		ldi r16, '0'
 		add r16, r14
@@ -752,9 +760,22 @@ get_travel_time:
 		st x+, r16
 
 	rcall display_message ;MESSAGE will hold the message to send to LCD
-	clr mode
+	ser mode
 	rcall get_chars ;return result
-	rcall store_result;(&result, &config_array)
+
+	ldi xl, low(config_array_index)
+	ldi xh, high(config_array_index)
+	mov temp, r14
+	lsl temp
+	lsl temp
+	lsl temp
+	lsl temp
+	adiw xl:xh, 11
+	clr temp2
+	add xl, temp
+	adc xh, temp2
+
+	rcall store_result;(&result, &config_array, &index)
 	inc r14
 rjmp get_travel_time
 	end_get_travel_time:
