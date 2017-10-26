@@ -505,6 +505,7 @@ get_chars: ;r17 mode=r
 						brne sum_continue
 						ldi r17, 10
 					sum_continue:
+						add r17,temp
 						ldi temp2,'0'
 						add temp2, temp
 						do_lcd_data temp2
