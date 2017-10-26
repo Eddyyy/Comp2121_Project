@@ -414,6 +414,7 @@ get_chars_start:
 		ldi temp2,'0'
 		add temp2, r17
 		do_lcd_data temp2
+		forloooooop: rjmp forloooooop
 		cpi r17, 0
 		brne character_loaded
 		jmp character_mode
