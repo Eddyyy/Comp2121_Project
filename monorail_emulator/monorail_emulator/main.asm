@@ -711,8 +711,6 @@ get_station_name:
 rjmp get_station_name
 	end_get_station_name:
 
-inf0: rjmp inf0
-
 clr r14
 get_travel_time:
 	cp r14, r15
@@ -734,7 +732,8 @@ get_travel_time:
 		ldi r16, '0'
 		add r16, r14
 		st x+, r16
-		ldi r16, ';'
+
+		ldi r16, '-'
 		st x+, r16
 
 	get_station_to:
@@ -748,6 +747,7 @@ get_travel_time:
 		ldi r16, '0'
 		add r16, r14
 		st x+, r16
+
 		ldi r16, ';'
 		st x+, r16
 
