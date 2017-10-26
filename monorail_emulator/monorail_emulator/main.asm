@@ -392,7 +392,7 @@ get_chars_start:
 		compare_D:
 			cpi temp, 'D'
 			brne character_loaded
-			cpi r17, 0
+			cpi i, 0
 			brne end_get_chars
 			jmp character_mode
 
@@ -402,7 +402,6 @@ get_chars_start:
 			ldi xl, low(String_container)
 			ldi xh, high(String_container)
 
-			push r15
 			clr r15
 			add xl, i
 			adc xh, r15
