@@ -45,16 +45,28 @@
 .endmacro
 
 
-.dseg
-MESSAGE: .byte 17
-buffer: .byte 1
-String_container: .byte 10
-Number_container: .byte 1
-num_stations: .byte 1
-config_array: .byte 160
-config_array_index: .byte 1
-stop_time: .byte 1
 
+.macro clear
+	ldi YL, low(@0) ; load the memory address to Y pointer
+	ldi YH, high(@0)
+	clr r16 ; set temp to 0
+	st Y+, r16 ; clear the two bytes at @0 in SRAM
+	st Y, r16
+.endmacro
+
+
+.dseg
+	MESSAGE: .byte 17
+	buffer: .byte 1
+	String_container: .byte 10
+	Number_container: .byte 1
+	num_stations: .byte 1
+	config_array: .byte 160
+	config_array_index: .byte 1
+	stop_time: .byte 1
+	SecondCounter: .byte 2 
+	TempCounter: .byte 2 
+	Flash_flag: .byte 1
 
 .cseg
 .org 0x00
@@ -66,7 +78,10 @@ rjmp bypass
 	string3: .db "STOP TIME:;"
 	err_string: .db "INCORRECT;"
 bypass:
-
+.org OVF0addr ; OVF0addr is the address of Timer0 Overflow Interrupt Vector
+	jmp Timer0OVF ; jump to the interrupt handler for Timer0 overflow.
+	jmp DEFAULT ; default service for all other interrupts.
+	DEFAULT: reti ; no interrupt handling 
 
 .org 0x72
 RESET:
@@ -648,7 +663,100 @@ store_result_return:
 	pop xl
 	ret
 infloop: rjmp infloop
+
+;The timer
+
+
+ Timer0OVF: ; interrupt subroutine to Timer0
+	 in r16, SREG
+	 push r16 ; prologue starts
+	 push YH ; save all conflicting registers in the prologue
+	 push YL
+	 push r25
+	 push r24 ; prologue ends
+	 push r19
+	 push xl
+	 push xh
+	 ; Load the value of the temporary counter
+	 lds r24, TempCounter
+	 lds r25, TempCounter+1
+	 adiw r25:r24, 1 ; increase the temporary counter by one
+
+	 cpi r24, low(2600) ; check if (r25:r24) = 7812
+	 ldi r16, high(2600) ; 7812 = 106/128
+	 cpc r25, r16
+	 brne NotSecond
+
+
+	ldi xl, low(Flash_flag)
+	ldi xh, low(Flash_flag)
+	ld r23,X
+	lds r18, SecondCounter
+	cpi r23,0
+	breq flash_2
+	flash_1:
+	ldi r19, 0b00000001
+	out PORTC, r19
+	clr r23
+	rjmp endinc
+	flash_2:
+	ldi r19, 0b00000010
+	out PORTC, r19
+	inc r23
+
+endinc:
+	 st x,r23
+	 clear TempCounter ; reset the temporary counter
+	 ; Load the value of the second counter
+	 lds r24, SecondCounter
+	 lds r25, SecondCounter+1
+	 adiw r25:r24, 1 ; increase the second counter by one
+	 sts SecondCounter, r24
+	 sts SecondCounter+1, r25
+	 rjmp EndIF
+
+NotSecond: ; store the new value of the temporary counter
+	 sts TempCounter, r24
+	 sts TempCounter+1, r25
+EndIF:
+
+	 pop xh
+	 pop xl
+	 pop r19
+	 pop r24 ; epilogue starts
+	 pop r25 ; restore all conflicting registers from the stack
+	 pop YL
+	 pop YH
+	 pop r16
+	 out SREG, r16
+	 reti ; return from the interrupt
+
+
+
+
+
+
+
+
+
+
+
 main:
+
+
+	 clear TempCounter ; initialize the temporary counter to 0
+	 clear SecondCounter ; initialize the second counter to 0
+	 clr r18
+	 clr r19
+
+	 ldi r16, 0b00000000
+	 out TCCR0A, r16
+	 ldi r16, 0b00000010
+	 out TCCR0B, r16 ; set prescalar value to 8
+	 ldi r16, 1<<TOIE0 ; TOIE0 is the bit number of TOIE0 which is 0
+	 sts TIMSK0, r16 ; enable Timer0 Overflow Interrupt
+
+
 	; asks first question 'Please type the maximum number of stations:' 
 	ldi xl, low(MESSAGE)
 	ldi xh, high(MESSAGE)
