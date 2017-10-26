@@ -76,10 +76,7 @@ TC:
 
 .org 0x0000
 	jmp RESET
-.org INT0addr
-	jmp PB_0
-.org INT1addr
-	jmp PB_1
+
 .org INT2addr
    jmp motor_speed
 
@@ -120,9 +117,10 @@ RESET:
 	do_lcd_command LCD_DISP_CLR
 	do_lcd_command LCD_ENTR_SET
 	do_lcd_command LCD_DISP_ON
-	rjmp main
+	ldi target, 60
+	rjmp run_motor
 
-main:
+run_motor:
 	clr input
 	clr target
 	ldi temp, (1<<PE4)		;labeled PE2 acctully PE4 
