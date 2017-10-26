@@ -391,7 +391,11 @@ get_chars_start:
 			ldi r17,0b01010010; S-1
 		compare_D:
 			cpi temp, 'D'
-			brne is_buffer_zero
+			brne character_loaded
+			cpi r17, 0
+			brne end_get_chars
+			jmp character_mode
+
 
 		end_get_chars:
 			ldi temp, 0b00111011 ; ';'
@@ -409,15 +413,6 @@ get_chars_start:
 			
 		compare_end:
 			jmp character_mode
-
-		is_buffer_zero:
-		ldi temp2,'0'
-		add temp2, r17
-		do_lcd_data temp2
-		forloooooop: rjmp forloooooop
-		cpi r17, 0
-		brne character_loaded
-		jmp character_mode
 
 			character_loaded:
 				cpi temp, 0
